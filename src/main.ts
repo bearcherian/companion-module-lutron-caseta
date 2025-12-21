@@ -24,8 +24,7 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 		this.config = config
 
 		if (this.config.host === undefined || this.config.host === '') {
-			this.updateStatus(InstanceStatus.BadConfig, 'No Host/IP')
-			return
+			this.updateStatus(InstanceStatus.BadConfig, 'No bridge configured')
 		}
 
 		if (!this.config.bridgeID) {
