@@ -1,28 +1,43 @@
 import { CompanionActionDefinition } from '@companion-module/base'
 import type { ModuleInstance } from './main.js'
-import { DeviceDefinition } from 'lutron-leap'
+import { DeviceDefinition, OneAreaDefinition } from 'lutron-leap'
 
-export function UpdateActions(self: ModuleInstance): void {
+export async function UpdateActions(self: ModuleInstance): Promise<void> {
 	const deviceActions: Record<string, CompanionActionDefinition> = {}
-	self.devicesOnBridge.forEach((device) => {
-		const deviceKeyName = device.SerialNumber
-		if (device.DeviceType === 'WallSwitch' || device.DeviceType === 'WallDimmer') {
-			deviceActions[`${deviceKeyName}_turn_on`] = turnOnFunction(self, device)
-			deviceActions[`${deviceKeyName}_turn_off`] = turnOffFunction(self, device)
-		}
-		if (device.DeviceType === 'WallDimmer') {
-			deviceActions[`${deviceKeyName}_set_brightness`] = setBrightnessAction(self, device)
-		}
-	})
+
+	await Promise.all(
+		self.devicesOnBridge.map(async (device) => {
+			try {
+				const response = await self.bridge?.getHref(device.AssociatedArea)
+
+				const areaName = (response as OneAreaDefinition).Area.Name
+				self.log('debug', `creating actions for ${areaName} ${device.Name}`)
+				const deviceKeyName = device.SerialNumber
+				if (
+					device.DeviceType === 'WallSwitch' ||
+					device.DeviceType === 'WallDimmer' ||
+					device.DeviceType === 'DivaSmartDimmer'
+				) {
+					deviceActions[`${deviceKeyName}_turn_on`] = turnOnFunction(self, areaName, device)
+					deviceActions[`${deviceKeyName}_turn_off`] = turnOffFunction(self, areaName, device)
+				}
+				if (device.DeviceType === 'WallDimmer' || device.DeviceType === 'DivaSmartDimmer') {
+					deviceActions[`${deviceKeyName}_set_brightness`] = setBrightnessAction(self, areaName, device)
+				}
+			} catch (err) {
+				self.log('error', `Error getting area for device ${device.Name}: ${(err as Error).message}`)
+			}
+		}),
+	)
 
 	self.setActionDefinitions({
 		...deviceActions,
 	})
 }
 
-function turnOnFunction(self: ModuleInstance, device: DeviceDefinition): CompanionActionDefinition {
+function turnOnFunction(self: ModuleInstance, areaName: string, device: DeviceDefinition): CompanionActionDefinition {
 	return {
-		name: `${device.Name}: Turn On `,
+		name: `${areaName} ${device.Name}: Turn On `,
 		options: [],
 		callback: async () => {
 			try {
@@ -37,9 +52,9 @@ function turnOnFunction(self: ModuleInstance, device: DeviceDefinition): Compani
 	}
 }
 
-function turnOffFunction(self: ModuleInstance, device: DeviceDefinition): CompanionActionDefinition {
+function turnOffFunction(self: ModuleInstance, areaName: string, device: DeviceDefinition): CompanionActionDefinition {
 	return {
-		name: `${device.Name}: Turn Off `,
+		name: `${areaName} ${device.Name}: Turn Off `,
 		options: [],
 		callback: async () => {
 			try {
@@ -54,9 +69,13 @@ function turnOffFunction(self: ModuleInstance, device: DeviceDefinition): Compan
 	}
 }
 
-function setBrightnessAction(self: ModuleInstance, device: DeviceDefinition): CompanionActionDefinition {
+function setBrightnessAction(
+	self: ModuleInstance,
+	areaName: string,
+	device: DeviceDefinition,
+): CompanionActionDefinition {
 	return {
-		name: `${device.Name}: Set Brightness`,
+		name: `${areaName} ${device.Name}: Set Brightness`,
 		options: [
 			{
 				id: 'brightness_value',
