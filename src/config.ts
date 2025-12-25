@@ -3,10 +3,17 @@ import { Regex, type SomeCompanionConfigField } from '@companion-module/base'
 export interface ModuleConfig {
 	host: string
 	port: number
-	ca?: string
-	certificate?: string
-	privateKey?: string
 	bridgeID?: string
+}
+
+export interface ModuleSecrets {
+	bridgeCerts?: BridgeCerts
+}
+
+export interface BridgeCerts {
+	ca: string
+	certificate: string
+	privateKey: string
 }
 
 export function GetConfigFields(discoveredBridges: Record<string, string>): SomeCompanionConfigField[] {
