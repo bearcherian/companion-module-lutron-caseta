@@ -4,11 +4,13 @@ This module provides controls for Lutron Caseta Smart Bridges and their connecte
 
 ### Supported Devices
 
+We currently provide support for light switches and dimmers. Other types of devices can be added if requested.
+
 Known Working Devices
 
 - Caseta Light Switches
 - Caseta Light Dimmers
-- Dive Light Switches
+- Diva Light Switches
 - Diva Light Dimmers
 
 If you have a device that works with this module but it is not listed, please open an issue to have it added. If you would like to have support added for a device, please open an issue to add support.
